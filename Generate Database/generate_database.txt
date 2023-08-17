@@ -1,0 +1,53 @@
+
+import os
+import csv
+import pathlib import Path
+
+
+PE_PRESENT_PATH=r".\SORTED_DB\PE_PRESENT" 
+PE_NOT_PRESENT_PATH=r".\SORTED_DB\PE_NOT_PRESENT"
+DATASET_FOLDER=r".\CTPA_DATABASE"
+csv_train=r".\train.csv"
+
+# create the list with the tranining dataset files
+list_of_ctpas=list()
+with open(".\ctpa_list.txt" 'r') as ctpa_list:
+	csvreader=csv.reader(ctpa_list)
+	for row in csvreader:
+		list_of_ctpa.append(row)
+ctpa_list.close()
+
+# convert the file into an image and return it
+def covert_to_png(details):
+	filename=pydicom.data.data_manager.get_files(details["path"],details["filename"])[0]
+	img = pydicom.dcmread(filename)
+	myImg=img.pixel_array.astype(float)
+	rescaled_image=(np.maximum(myImg,0)/myImg.max())*255
+	final_image=np.uint8(rescaled_image)
+	final_image=Image.fromarray(final_image)
+	return final_image
+
+# save the file at the created path based on the presence of PE	
+def save_file(details):
+    if details["filename"] in list_of_ctpas:
+	ctpa=cover_to_png(details)
+	if details["left"] or details["right"] or details["central"]:
+		path_to_save=os.path.join(PE_PRESENT_PATH, details["filename"]+".png")
+	else:
+		path_to_save=os.path.join(PE_NOT_PRESENT_PATH, details["filename"]+".png")
+	ctpa.save(Path(path_to_save))	
+
+# go through each ctpa exitent in the intial dataset and save the one used in the traning.
+with open(csv_train, 'r') as csvfile:
+    csvreader=csv.reader(csvfile)
+    next(csvreader)# step over header
+    for row in csvreader:
+	 details = {
+            "filename":row[2],
+	    "path":os.path.join(DATASET_FOLDER, row[0]+"\"+row[1])
+            "left": bool(int(row[10])),
+            "right": bool(int(row[13])),
+            "central": bool(int(row[15]))
+        }
+        save_file(details)     
+csvfile.close()
